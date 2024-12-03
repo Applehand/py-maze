@@ -5,6 +5,8 @@ WINDOW_WIDTH = 255
 
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
+GREEN = (0, 255, 0)
+GREY = (128, 128, 128)
 
 cell_width, cell_height, cell_margin = 20, 20, 5
 grid_height, grid_width = 10, 10
@@ -23,22 +25,18 @@ class Cell:
         self.color = color
         self.col = self.x // (cell_width + cell_margin) # col pos in grid
         self.row = self.y // (cell_height + cell_margin) # row pos in grid
-
-    def draw(self, screen):
-        pygame.draw.rect(screen, self.color, (self.x, self.y, self.width, self.height))
+        self.selected = False
+        self.visited = False
 
     @property
     def neighbors(self):
         neighbors = {}
 
-        col = self.x // (cell_width + cell_margin)
-        row = self.y // (cell_height + cell_margin)
-
         directions = {
-            "N": (row - 1, col),
-            "S": (row + 1, col),
-            "W": (row, col - 1),
-            "E": (row, col + 1),
+            "N": (self.row - 1, self.col),
+            "S": (self.row + 1, self.col),
+            "W": (self.row, self.col - 1),
+            "E": (self.row, self.col + 1),
         }
 
         for direction, (neighbor_row, neighbor_col) in directions.items():
@@ -46,6 +44,15 @@ class Cell:
                 neighbors[direction] = grid[neighbor_row][neighbor_col]
 
         return neighbors
+
+    def draw(self, screen):
+        if self.selected:
+            self.color = GREEN
+        elif self.visited:
+            self.color = GREY
+        else:
+            self.color = WHITE
+        pygame.draw.rect(screen, self.color, (self.x, self.y, self.width, self.height))
 
 
 grid = []
@@ -75,6 +82,9 @@ def game_loop():
                 clicked_row = pos[1] // (cell_height + cell_margin)
                 if 0 <= clicked_row < grid_height and 0 <= clicked_column < grid_width:
                     cell = grid[clicked_row][clicked_column]
+                    cell.selected = not cell.selected
+                    cell.visited = True
+
                     print(f"Clicked cell: ({clicked_row}, {clicked_column})")
                     print("Neighbors:")
                     for direction, neighbor in cell.neighbors.items():
