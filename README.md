@@ -16,5 +16,5 @@ pip install -r requirements.txt
 3. Run the game:
 
 ```commandline
-python maze.py
+python main.py
 ```
