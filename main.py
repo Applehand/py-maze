@@ -10,16 +10,42 @@ cell_width, cell_height, cell_margin = 20, 20, 5
 grid_height, grid_width = 10, 10
 
 
+def is_within_grid(row, col):
+    return 0 <= row < grid_height and 0 <= col < grid_width
+
+
 class Cell:
     def __init__(self, pos_x, pos_y, width, height, color=WHITE):
-        self.x = pos_x
-        self.y = pos_y
+        self.x = pos_x # x pixel coord for pygame drawing
+        self.y = pos_y # y pixel coord for pygame drawing
         self.width = width
         self.height = height
         self.color = color
+        self.col = self.x // (cell_width + cell_margin) # col pos in grid
+        self.row = self.y // (cell_height + cell_margin) # row pos in grid
 
     def draw(self, screen):
         pygame.draw.rect(screen, self.color, (self.x, self.y, self.width, self.height))
+
+    @property
+    def neighbors(self):
+        neighbors = {}
+
+        col = self.x // (cell_width + cell_margin)
+        row = self.y // (cell_height + cell_margin)
+
+        directions = {
+            "N": (row - 1, col),
+            "S": (row + 1, col),
+            "W": (row, col - 1),
+            "E": (row, col + 1),
+        }
+
+        for direction, (neighbor_row, neighbor_col) in directions.items():
+            if is_within_grid(neighbor_row, neighbor_col):
+                neighbors[direction] = grid[neighbor_row][neighbor_col]
+
+        return neighbors
 
 
 grid = []
@@ -47,7 +73,12 @@ def game_loop():
 
                 clicked_column = pos[0] // (cell_width + cell_margin)
                 clicked_row = pos[1] // (cell_height + cell_margin)
-                print(f"Clicked at:{clicked_column, clicked_row}",)
+                if 0 <= clicked_row < grid_height and 0 <= clicked_column < grid_width:
+                    cell = grid[clicked_row][clicked_column]
+                    print(f"Clicked cell: ({clicked_row}, {clicked_column})")
+                    print("Neighbors:")
+                    for direction, neighbor in cell.neighbors.items():
+                        print(f"  {direction}: ({neighbor.row}, {neighbor.col})")
 
 
         # Fill the screen with a color to wipe away anything from last frame
