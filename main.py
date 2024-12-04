@@ -3,6 +3,8 @@ import pygame
 # Window dimensions and colors
 WINDOW_WIDTH = 1920
 WINDOW_HEIGHT = 1080
+GRID_WIDTH = 20
+GRID_HEIGHT = 10
 
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
@@ -28,8 +30,8 @@ class Cell:
         self.width = width
         self.height = height
         self.color = color
-        self.selected = False  # Whether the cell is selected
-        self.visited = False  # Whether the cell has been visited
+        self.selected = False
+        self.visited = False
 
     def draw(self, screen):
         """
@@ -45,7 +47,7 @@ class Cell:
         else:
             self.color = WHITE
 
-        # Draw the cell as a rectangle
+        # Draw the cell
         pygame.draw.rect(screen, self.color, (self.x, self.y, self.width, self.height))
 
 
@@ -182,7 +184,7 @@ class Grid:
                 cell.draw(screen)
 
 
-grid = Grid(20, 20, WINDOW_WIDTH, WINDOW_HEIGHT, 1)
+grid = Grid(GRID_WIDTH, GRID_HEIGHT, WINDOW_WIDTH, WINDOW_HEIGHT, 1)
 
 
 def game_loop():
