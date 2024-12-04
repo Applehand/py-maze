@@ -41,7 +41,7 @@ class Grid:
         self.height = grid_height  # Number of cells vertically
         self.cell_width = cell_width  # Width of each cell in pixels
         self.cell_height = cell_height  # Height of each cell in pixels
-        self.cell_margin = cell_margin  # Margin between cells
+        self.margin = cell_margin  # Margin between cells
         self.cells = self._initialize_grid()
 
     def _initialize_grid(self):
@@ -51,8 +51,8 @@ class Grid:
             grid.append([])
             for col in range(self.width):
                 # Calculate position of each cell
-                pos_x = (self.cell_margin + self.cell_width) * col + self.cell_margin
-                pos_y = (self.cell_margin + self.cell_height) * row + self.cell_margin
+                pos_x = (self.margin + self.cell_width) * col + self.margin
+                pos_y = (self.margin + self.cell_height) * row + self.margin
                 grid[row].append(Cell(pos_x, pos_y, self.cell_width, self.cell_height))
         return grid
 
@@ -76,8 +76,8 @@ class Grid:
 
     def get_cell_position(self, x, y):
         """Calculate grid row and column from pixel coordinates (x, y)."""
-        col = x // (self.cell_width + self.cell_margin)
-        row = y // (self.cell_height + self.cell_margin)
+        col = x // (self.cell_width + self.margin)
+        row = y // (self.cell_height + self.margin)
 
         if self.is_within_grid(row, col):
             return row, col
