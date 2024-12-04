@@ -1,10 +1,10 @@
 import pygame
 
-# Window dimensions and colors
-WINDOW_WIDTH = 1920
-WINDOW_HEIGHT = 1080
-GRID_WIDTH = 20
+WINDOW_WIDTH = 550
+WINDOW_HEIGHT = 550
+GRID_WIDTH = 10
 GRID_HEIGHT = 10
+CELL_MARGIN = 3
 
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
@@ -70,23 +70,23 @@ class Grid:
         self.screen_width = screen_width
         self.screen_height = screen_height
 
-        # Dynamically calculate cell dimensions and grid offsets
+        # Dynamically calculate cell dimensions, grid margins, and offset
         self.cell_width, self.cell_height = self._evaluate_dimensions()
         self.cells = self._initialize_grid()
 
     def _evaluate_dimensions(self):
         """
-        Calculate the width, height, and offsets for cells to fit the screen.
+        Calculate the width, height, and margin for cells to fit the screen.
 
         :return: (cell_width, cell_height) as integers.
         """
         # Total space occupied by margins
-        total_line_width_x = self.cell_margin * (self.width + 1)
-        total_line_width_y = self.cell_margin * (self.height + 1)
+        total_margin_width_x = self.cell_margin * (self.width + 1)
+        total_margin_width_y = self.cell_margin * (self.height + 1)
 
         # Calculate cell dimensions
-        square_width = int((self.screen_width - total_line_width_x) / self.width)
-        square_height = int((self.screen_height - total_line_width_y) / self.height)
+        square_width = int((self.screen_width - total_margin_width_x) / self.width)
+        square_height = int((self.screen_height - total_margin_width_y) / self.height)
 
         # Calculate grid size in pixels
         self.grid_width_px = square_width * self.width + self.cell_margin * (self.width + 1)
@@ -184,7 +184,7 @@ class Grid:
                 cell.draw(screen)
 
 
-grid = Grid(GRID_WIDTH, GRID_HEIGHT, WINDOW_WIDTH, WINDOW_HEIGHT, 1)
+grid = Grid(GRID_WIDTH, GRID_HEIGHT, WINDOW_WIDTH, WINDOW_HEIGHT, CELL_MARGIN)
 
 
 def game_loop():
