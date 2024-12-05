@@ -1,15 +1,17 @@
 import pygame
+import random
 
 WINDOW_WIDTH = 550
 WINDOW_HEIGHT = 550
 GRID_WIDTH = 10
 GRID_HEIGHT = 10
-CELL_MARGIN = 3
+CELL_MARGIN = 0
 
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
 GREEN = (0, 255, 0)
 GREY = (128, 128, 128)
+DARK_GREY = (50, 50, 50)
 
 
 class Cell:
@@ -30,8 +32,10 @@ class Cell:
         self.width = width
         self.height = height
         self.color = color
-        self.selected = False
+        self.current = False
+        self.chosen = False
         self.visited = False
+        self.walls = [True, True, True, True] # Left[0], Top[1], Right[2], Bottom[3]
 
     def draw(self, screen):
         """
@@ -39,20 +43,27 @@ class Cell:
 
         :param screen: Pygame surface to draw on.
         """
-        # Change color based on cell state
-        if self.selected:
-            self.color = GREEN
-        elif self.visited:
-            self.color = GREY
-        else:
-            self.color = WHITE
+        # Draw walls
+        wall_color = BLACK
+        wall_thickness = 6
+        wall_coords = [
+            ((self.x, self.y), (self.x, self.y + self.height)),  # Left wall
+            ((self.x, self.y), (self.x + self.width, self.y)),  # Top wall
+            ((self.x + self.width, self.y), (self.x + self.width, self.y + self.height)),  # Right wall
+            ((self.x, self.y + self.height), (self.x + self.width, self.y + self.height))  # Bottom wall
+        ]
 
-        # Draw the cell
+        for i, wall in enumerate(self.walls):
+            if wall:  # Check if the wall exists
+                start, end = wall_coords[i]
+                pygame.draw.line(screen, wall_color, start, end, wall_thickness)
+
+        # Draw the cell background
         pygame.draw.rect(screen, self.color, (self.x, self.y, self.width, self.height))
 
 
 class Grid:
-    """Manages a grid of cells and handles interactions with them."""
+    """Manages a grid of cells, including their interactions and dynamic scaling."""
 
     def __init__(self, grid_width, grid_height, screen_width, screen_height, cell_margin):
         """
@@ -167,11 +178,38 @@ class Grid:
             cell_x = self.offset_x + self.cell_margin * (col + 1) + self.cell_width * col
             cell_y = self.offset_y + self.cell_margin * (row + 1) + self.cell_height * row
 
-            # Verify click is within the actual cell
+            # Verify within the actual cell
             if cell_x <= x < cell_x + self.cell_width and cell_y <= y < cell_y + self.cell_height:
                 return row, col
 
         return None, None
+
+    def remove_wall_between(self, cell_a, cell_b):
+        """
+        Remove the wall between two adjacent cells.
+
+        :param cell_a: The first cell.
+        :param cell_b: The second cell (must be adjacent to cell_a).
+        """
+        # Determine the relationship between the cells
+        row_a, col_a = self.get_cell_position(cell_a.x, cell_a.y)
+        row_b, col_b = self.get_cell_position(cell_b.x, cell_b.y)
+
+        if row_a == row_b:  # Same row
+            if col_a < col_b:  # cell_b is to the east
+                cell_a.walls[2] = False  # Remove right wall of cell_a
+                cell_b.walls[0] = False  # Remove left wall of cell_b
+            elif col_a > col_b:  # cell_b is to the west
+                cell_a.walls[0] = False  # Remove left wall of cell_a
+                cell_b.walls[2] = False  # Remove right wall of cell_b
+        elif col_a == col_b:  # Same column
+            if row_a < row_b:  # cell_b is to the south
+                cell_a.walls[3] = False  # Remove bottom wall of cell_a
+                cell_b.walls[1] = False  # Remove top wall of cell_b
+            elif row_a > row_b:  # cell_b is to the north
+                cell_a.walls[1] = False  # Remove top wall of cell_a
+                cell_b.walls[3] = False  # Remove bottom wall of cell_b
+
 
     def draw(self, screen):
         """
@@ -184,7 +222,52 @@ class Grid:
                 cell.draw(screen)
 
 
+class Maze:
+    """
+    Manages maze generation and solving.
+    """
+
+    def __init__(self, grid):
+        self.grid = grid
+        self.origin_cell = random.choice([cell for row in self.grid.cells for cell in row])
+        self.stack = []
+        self._depth_first_search()
+
+    def _depth_first_search(self):
+        self.origin_cell.visited = True
+        self.origin_cell.color = GREEN
+        self.stack.append(self.origin_cell)
+        while self.stack:
+            current_cell = self.stack.pop()
+            current_cell.current = True
+            current_cell_row, current_cell_col = self.grid.get_cell_position(current_cell.x, current_cell.y)
+            neighbors = self.grid.get_neighbors(current_cell_row, current_cell_col)
+            unvisited_neighbors = [n for n in neighbors.values() if not n.visited]
+            if unvisited_neighbors:
+                self.stack.append(current_cell)
+                chosen_cell = random.choice(unvisited_neighbors)
+                chosen_cell.chosen = True
+                self.grid.remove_wall_between(current_cell, chosen_cell)
+                chosen_cell.visited = True
+                self.stack.append(chosen_cell)
+                current_cell.current = False
+                chosen_cell.chosen = False
+
+
+class GameSession:
+    """
+    Manages game sessions, including maze interactions, gameplay rules, and scores.
+    """
+
+    def __init__(self, maze, game_mode):
+        self.maze = maze
+        self.start_cell = self.maze.origin_cell
+        self.game_mode = game_mode
+
+
+
 grid = Grid(GRID_WIDTH, GRID_HEIGHT, WINDOW_WIDTH, WINDOW_HEIGHT, CELL_MARGIN)
+maze = Maze(grid)
 
 
 def game_loop():
@@ -199,16 +282,16 @@ def game_loop():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-            elif event.type == pygame.MOUSEBUTTONDOWN:
-                # Handle mouse click to select a cell
-                pos = pygame.mouse.get_pos()
-                clicked_row, clicked_column = grid.get_cell_position(pos[0], pos[1])
-
-                if clicked_row is not None and clicked_column is not None:
-                    cell = grid.cells[clicked_row][clicked_column]
-                    cell.selected = not cell.selected
-                    cell.visited = True
-                    print(f"Clicked cell: ({clicked_row}, {clicked_column})")
+            # elif event.type == pygame.MOUSEBUTTONDOWN:
+            #     # Handle mouse click to select a cell
+            #     pos = pygame.mouse.get_pos()
+            #     clicked_row, clicked_column = grid.get_cell_position(pos[0], pos[1])
+            #
+            #     if clicked_row is not None and clicked_column is not None:
+            #         cell = grid.cells[clicked_row][clicked_column]
+            #         cell.selected = not cell.selected
+            #         cell.visited = True
+            #         print(f"Clicked cell: ({clicked_row}, {clicked_column})")
 
         grid.draw(screen)  # Draw the grid
         pygame.display.flip()  # Update the display
