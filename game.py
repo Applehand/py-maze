@@ -1,12 +1,15 @@
 from models import Grid, Maze, GameSession
 from utils import WHITE
+GRID_WIDTH = 10
+GRID_HEIGHT = 10
+CELL_MARGIN = 0
 
-def loop(pygame, window_width, window_height, grid_width, grid_height, cell_margin):
+def loop(pygame, window_width, window_height):
     """Main game loop to handle events and rendering."""
     screen = pygame.display.set_mode((window_width, window_height))
     clock = pygame.time.Clock()
 
-    grid = Grid(grid_width, grid_height, window_width, window_height, cell_margin)
+    grid = Grid(GRID_WIDTH, GRID_HEIGHT, window_width, window_height, CELL_MARGIN)
     maze = Maze(grid)
     game_session = GameSession(maze, "default")
 
