@@ -3,8 +3,8 @@ import random
 
 WINDOW_WIDTH = 550
 WINDOW_HEIGHT = 550
-GRID_WIDTH = 10
-GRID_HEIGHT = 10
+GRID_WIDTH = 5
+GRID_HEIGHT = 5
 CELL_MARGIN = 0
 
 BLACK = (0, 0, 0)
@@ -12,6 +12,29 @@ WHITE = (255, 255, 255)
 GREEN = (0, 255, 0)
 GREY = (128, 128, 128)
 DARK_GREY = (50, 50, 50)
+LIGHT_GREY = (228, 228, 228)
+RED = (255, 0, 0)
+BLUE = (0, 0, 255)
+YELLOW = (255, 255, 0)
+PURPLE = (128, 0, 128)
+ORANGE = (255, 165, 0)
+CYAN = (0, 255, 255)
+MAGENTA = (255, 0, 255)
+BEIGE = (245, 245, 220)
+BROWN = (139, 69, 19)
+NEON_GREEN = (57, 255, 20)
+ELECTRIC_BLUE = (44, 117, 255)
+HOT_PINK = (255, 105, 180)
+GOLD = (255, 215, 0)
+SILVER = (192, 192, 192)
+MIDNIGHT_BLUE = (25, 25, 112)
+CHARCOAL = (54, 69, 79)
+OLIVE = (128, 128, 0)
+TEAL = (0, 128, 128)
+LIME = (50, 205, 50)
+CRIMSON = (220, 20, 60)
+INDIGO = (75, 0, 130)
+AMBER = (255, 191, 0)
 
 
 class Cell:
@@ -35,6 +58,8 @@ class Cell:
         self.current = False
         self.chosen = False
         self.visited = False
+        self.start = False
+        self.goal = False
         self.walls = [True, True, True, True] # Left[0], Top[1], Right[2], Bottom[3]
 
     def draw(self, screen):
@@ -43,6 +68,18 @@ class Cell:
 
         :param screen: Pygame surface to draw on.
         """
+        draw_color = self.color
+        if self.start:
+            draw_color = NEON_GREEN
+        elif self.goal:
+            draw_color = GOLD
+        if self.current:
+            draw_color = BLUE
+        elif self.chosen:
+            draw_color = YELLOW
+        elif self.visited:
+            draw_color = LIGHT_GREY
+
         # Draw walls
         wall_color = BLACK
         wall_thickness = 6
@@ -59,7 +96,7 @@ class Cell:
                 pygame.draw.line(screen, wall_color, start, end, wall_thickness)
 
         # Draw the cell background
-        pygame.draw.rect(screen, self.color, (self.x, self.y, self.width, self.height))
+        pygame.draw.rect(screen, draw_color, (self.x, self.y, self.width, self.height))
 
 
 class Grid:
@@ -210,6 +247,33 @@ class Grid:
                 cell_a.walls[1] = False  # Remove top wall of cell_a
                 cell_b.walls[3] = False  # Remove bottom wall of cell_b
 
+    def has_wall_between(self, cell_a, cell_b):
+        """
+        Check if there is a wall between two adjacent cells.
+
+        :param cell_a: The first cell.
+        :param cell_b: The second cell.
+        :return: True if there is a wall between the cells, False otherwise.
+        """
+        # Calculate grid coordinates of the cells
+        row_a, col_a = self.get_cell_position(cell_a.x, cell_a.y)
+        row_b, col_b = self.get_cell_position(cell_b.x, cell_b.y)
+
+        # Determine the relative position of cell_b to cell_a
+        if row_a == row_b:  # Same row
+            if col_a < col_b:  # cell_b is to the east
+                return cell_a.walls[2] or cell_b.walls[0]
+            elif col_a > col_b:  # cell_b is to the west
+                return cell_a.walls[0] or cell_b.walls[2]
+        elif col_a == col_b:  # Same column
+            if row_a < row_b:  # cell_b is to the south
+                return cell_a.walls[3] or cell_b.walls[1]
+            elif row_a > row_b:  # cell_b is to the north
+                return cell_a.walls[1] or cell_b.walls[3]
+
+        return True  # Default to True if cells are not adjacent
+
+
 
     def draw(self, screen):
         """
@@ -230,29 +294,30 @@ class Maze:
     def __init__(self, grid):
         self.grid = grid
         self.origin_cell = random.choice([cell for row in self.grid.cells for cell in row])
+        self.distances = {}
         self.stack = []
-        self._depth_first_search()
+        self._generate_maze()
 
-    def _depth_first_search(self):
+    def _generate_maze(self):  # depth first search algorithm for generating maze
         self.origin_cell.visited = True
-        self.origin_cell.color = GREEN
+        self.distances[self.origin_cell] = 0
         self.stack.append(self.origin_cell)
         while self.stack:
             current_cell = self.stack.pop()
-            current_cell.current = True
             current_cell_row, current_cell_col = self.grid.get_cell_position(current_cell.x, current_cell.y)
             neighbors = self.grid.get_neighbors(current_cell_row, current_cell_col)
             unvisited_neighbors = [n for n in neighbors.values() if not n.visited]
             if unvisited_neighbors:
                 self.stack.append(current_cell)
                 chosen_cell = random.choice(unvisited_neighbors)
-                chosen_cell.chosen = True
                 self.grid.remove_wall_between(current_cell, chosen_cell)
+                self.distances[chosen_cell] = self.distances[current_cell] + 1
                 chosen_cell.visited = True
                 self.stack.append(chosen_cell)
-                current_cell.current = False
-                chosen_cell.chosen = False
 
+        for row in self.grid.cells:  # reset cells to be unvisited
+            for cell in row:
+                cell.visited = False
 
 class GameSession:
     """
@@ -262,12 +327,27 @@ class GameSession:
     def __init__(self, maze, game_mode):
         self.maze = maze
         self.start_cell = self.maze.origin_cell
+        self.goal_cell = max(self.maze.distances, key=self.maze.distances.get)
+        self.start_cell.start, self.goal_cell.goal = True, True
+        self.current_cell = self.start_cell
         self.game_mode = game_mode
 
+    def target_neighboring_cell(self, target_direction):  # "N", "S", "W", "E"
+        cur_row, cur_col = self.maze.grid.get_cell_position(self.current_cell.x, self.current_cell.y)
+        current_neighbors = self.maze.grid.get_neighbors(cur_row, cur_col)
+        target_cell = current_neighbors[target_direction]
+        target_cell.chosen = True
+
+    def move_player_to_cell(self, cell, target_cell):
+        if not self.maze.grid.has_wall_between(cell, target_cell):
+            self.current_cell.current = False
+            target_cell.current = True
+            self.current_cell = target_cell
 
 
 grid = Grid(GRID_WIDTH, GRID_HEIGHT, WINDOW_WIDTH, WINDOW_HEIGHT, CELL_MARGIN)
 maze = Maze(grid)
+game = GameSession(maze, "default")
 
 
 def game_loop():
@@ -277,28 +357,42 @@ def game_loop():
     clock = pygame.time.Clock()
 
     running = True
+
     while running:
         # Handle events
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-            # elif event.type == pygame.MOUSEBUTTONDOWN:
-            #     # Handle mouse click to select a cell
-            #     pos = pygame.mouse.get_pos()
-            #     clicked_row, clicked_column = grid.get_cell_position(pos[0], pos[1])
-            #
-            #     if clicked_row is not None and clicked_column is not None:
-            #         cell = grid.cells[clicked_row][clicked_column]
-            #         cell.selected = not cell.selected
-            #         cell.visited = True
-            #         print(f"Clicked cell: ({clicked_row}, {clicked_column})")
 
-        grid.draw(screen)  # Draw the grid
-        pygame.display.flip()  # Update the display
+            elif event.type == pygame.KEYDOWN:
+                # Handle arrow keys for movement
+                direction_map = {
+                    pygame.K_UP: "N",
+                    pygame.K_DOWN: "S",
+                    pygame.K_LEFT: "W",
+                    pygame.K_RIGHT: "E"
+                }
+                if event.key in direction_map:
+                    direction = direction_map[event.key]
 
+                    cur_row, cur_col = grid.get_cell_position(game.current_cell.x, game.current_cell.y)
+                    neighbors = grid.get_neighbors(cur_row, cur_col)
+
+                    if direction in neighbors:
+                        target_cell = neighbors[direction]
+
+                        if not grid.has_wall_between(game.current_cell, target_cell):
+                            game.move_player_to_cell(game.current_cell, target_cell)
+
+        # Draw the grid and update the display
+        screen.fill(WHITE)  # Clear screen
+        grid.draw(screen)
+        pygame.display.flip()
         clock.tick(60)  # Cap the frame rate at 60 FPS
 
     pygame.quit()
+
+
 
 
 if __name__ == "__main__":
