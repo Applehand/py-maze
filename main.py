@@ -3,8 +3,8 @@ import random
 
 WINDOW_WIDTH = 550
 WINDOW_HEIGHT = 550
-GRID_WIDTH = 5
-GRID_HEIGHT = 5
+GRID_WIDTH = 10
+GRID_HEIGHT = 10
 CELL_MARGIN = 0
 
 BLACK = (0, 0, 0)
@@ -78,16 +78,16 @@ class Cell:
         elif self.chosen:
             draw_color = YELLOW
         elif self.visited:
-            draw_color = LIGHT_GREY
+            draw_color = GREY
 
         # Draw walls
         wall_color = BLACK
         wall_thickness = 6
         wall_coords = [
-            ((self.x, self.y), (self.x, self.y + self.height)),  # Left wall
-            ((self.x, self.y), (self.x + self.width, self.y)),  # Top wall
-            ((self.x + self.width, self.y), (self.x + self.width, self.y + self.height)),  # Right wall
-            ((self.x, self.y + self.height), (self.x + self.width, self.y + self.height))  # Bottom wall
+            ((self.x, self.y), (self.x, self.y + self.height - 1)),  # Left wall
+            ((self.x, self.y), (self.x + self.width - 1, self.y)),  # Top wall
+            ((self.x + self.width - 1, self.y), (self.x + self.width - 1, self.y + self.height - 1)),  # Right wall
+            ((self.x, self.y + self.height - 1), (self.x + self.width - 1, self.y + self.height - 1))  # Bottom wall
         ]
 
         for i, wall in enumerate(self.walls):
@@ -342,6 +342,7 @@ class GameSession:
         if not self.maze.grid.has_wall_between(cell, target_cell):
             self.current_cell.current = False
             target_cell.current = True
+            target_cell.visited = True
             self.current_cell = target_cell
 
 
