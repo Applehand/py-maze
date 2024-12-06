@@ -27,12 +27,11 @@ class Cell:
         self.goal = False
         self.walls = [True, True, True, True] # Left[0], Top[1], Right[2], Bottom[3]
 
-    def draw(self, screen, draw):
+    def draw(self, renderer):
         """
         Draw the cell on the given screen surface.
 
-        :param screen: Pygame surface to draw on.
-        :param draw: Pygame draw function.
+        :param renderer: the rendering interface - pygame, or web in the future.
         """
         draw_color = self.color
         if self.start:
@@ -59,10 +58,10 @@ class Cell:
         for i, wall in enumerate(self.walls):
             if wall:  # Check if the wall exists
                 start, end = wall_coords[i]
-                draw.line(screen, wall_color, start, end, wall_thickness)
+                renderer.draw_line(start, end, wall_color, wall_thickness)
 
         # Draw the cell background
-        draw.rect(screen, draw_color, (self.x, self.y, self.width, self.height))
+        renderer.draw_rect(self.x, self.y, self.width, self.height, draw_color)
 
 
 class Grid:
@@ -239,15 +238,15 @@ class Grid:
 
         return True  # Default to True if cells are not adjacent
 
-    def draw(self, screen, draw_func):
+    def draw(self, renderer):
         """
-        Draw all cells in the grid on the given screen surface.
+        Draw all cells in the grid using the given renderer.
 
-        :param screen: Pygame surface to draw on.
+        :param renderer: the rendering interface - pygame, or web in the future.
         """
         for row in self.cells:
             for cell in row:
-                cell.draw(screen, draw_func)
+                cell.draw(renderer)
 
 
 class Maze:
