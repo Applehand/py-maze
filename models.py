@@ -63,6 +63,14 @@ class Cell:
         # Draw the cell background
         renderer.draw_rect(self.x, self.y, self.width, self.height, draw_color)
 
+    def reset_state(self):
+        self.visited = False
+        self.chosen = False
+        self.current = False
+        self.start = False
+        self.goal = False
+        self.walls = [True, True, True, True]
+
 
 class Grid:
     """Manages a grid of cells, including their interactions and dynamic scaling within the window dimensions."""
@@ -238,6 +246,14 @@ class Grid:
 
         return True  # Default to True if cells are not adjacent
 
+    def reset_cell_states(self):
+        """
+        Resets all cell properties to initial state.
+        """
+        for row in self.cells:
+            for cell in row:
+                cell.reset_state()
+
     def draw(self, renderer):
         """
         Draw all cells in the grid using the given renderer.
@@ -282,6 +298,12 @@ class Maze:
             for cell in row:
                 cell.visited = False
 
+    def reset_maze(self):
+        self.grid.reset_cell_states()
+        self.origin_cell = random.choice([cell for row in self.grid.cells for cell in row])
+        self.distances = {}
+        self._generate_maze()
+
 
 class GameSession:
     """
@@ -305,7 +327,17 @@ class GameSession:
     def move_player_to_cell(self, cell, target_cell):
         if not self.maze.grid.has_wall_between(cell, target_cell):
             self.current_cell.current = False
+            if target_cell.goal:
+                self.reset_game()
+                return
             target_cell.current = True
             target_cell.visited = True
             self.current_cell = target_cell
 
+    def reset_game(self):
+        self.maze.reset_maze()
+        self.start_cell = self.maze.origin_cell
+        self.goal_cell = max(self.maze.distances, key=self.maze.distances.get)
+        self.start_cell.start, self.goal_cell.goal = True, True
+        self.current_cell = self.start_cell
+        self.current_cell.current = True

@@ -2,8 +2,8 @@ from models import Grid, Maze, GameSession
 from utils import WHITE
 from render import PygameRenderer
 
-GRID_WIDTH = 10
-GRID_HEIGHT = 10
+GRID_WIDTH = 5
+GRID_HEIGHT = 5
 CELL_MARGIN = 0
 
 def loop(pygame, window_width, window_height):
