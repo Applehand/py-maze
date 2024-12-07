@@ -37,7 +37,9 @@ def loop(pygame, window_width, window_height):
                     if direction in neighbors:
                         target_cell = neighbors[direction]
                         if not grid.has_wall_between(game_session.current_cell, target_cell):
-                            game_session.move_player_to_cell(game_session.current_cell, target_cell)
+                            round_won = game_session.move_player_to_cell(game_session.current_cell, target_cell)
+                            if round_won:
+                                game_session.round += 1
 
         renderer.clear_screen(WHITE)
         grid.draw(renderer)

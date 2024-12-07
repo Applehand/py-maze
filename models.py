@@ -254,6 +254,10 @@ class Grid:
             for cell in row:
                 cell.reset_state()
 
+    def reset_grid(self):
+        self.cell_width, self.cell_height = self._evaluate_dimensions()
+        self.cells = self._initialize_grid()
+
     def draw(self, renderer):
         """
         Draw all cells in the grid using the given renderer.
@@ -317,6 +321,7 @@ class GameSession:
         self.start_cell.start, self.goal_cell.goal = True, True
         self.current_cell = self.start_cell
         self.game_mode = game_mode
+        self.round = 0
 
     def target_neighboring_cell(self, target_direction):  # "N", "S", "W", "E"
         cur_row, cur_col = self.maze.grid.get_cell_position(self.current_cell.x, self.current_cell.y)
@@ -329,12 +334,15 @@ class GameSession:
             self.current_cell.current = False
             if target_cell.goal:
                 self.reset_game()
-                return
+                return True
             target_cell.current = True
             target_cell.visited = True
             self.current_cell = target_cell
 
     def reset_game(self):
+        self.maze.grid.height += self.round
+        self.maze.grid.width += self.round
+        self.maze.grid.reset_grid()
         self.maze.reset_maze()
         self.start_cell = self.maze.origin_cell
         self.goal_cell = max(self.maze.distances, key=self.maze.distances.get)
